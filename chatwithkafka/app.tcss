@@ -1,0 +1,20 @@
+Screen {
+    layout: vertical;
+    color: #1CA152;
+    background: black;
+    padding: 2;
+}
+
+#header {
+
+}
+
+#history {
+    height: 1fr;
+    overflow-y: auto;
+    color: #1CA152;
+}
+
+#message {
+
+}
