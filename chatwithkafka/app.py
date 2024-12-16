@@ -69,9 +69,28 @@ class ChatWithKafkaApp(App):
         # Set focus to the input field, so the user can type messages right away.
         self.query("#message").focus()
         # Also, send info about that the user has entered the chat.
-        self._send_message("Has entered the chat.")
+        self.send_message("Has entered the chat.")
 
-    def _send_message(self, message: str):
+    def on_key(self, event: Key):
+        """This is the event handler for key events. We use this to handle the enter key and the escape key."""
+        if event.key == "escape":
+            # Exit the app
+            self.exit()
+        elif event.key == "enter":
+            # Get the message from the input field
+            input = self.query("#message").first()
+            message = input.value
+            # Send the message to the Kafka topic
+            self.send_message(message)
+            # Clear the input field
+            input.value = ""
+            input.refresh()
+
+    def _on_exit_app(self) -> None:
+        """This is run when the app is about to exit."""
+        self.send_message("Has left the chat.")
+
+    def send_message(self, message: str):
         """Send a message to a topic with the previously created producer."""
         # We package this as a JSON message with the user, the message, and the time.
         # This is to be able to ensure that the time is sent as UTC time and not local time,
@@ -83,7 +102,6 @@ class ChatWithKafkaApp(App):
             "user": self._user,
             "time": datetime.datetime.now(tz=datetime.timezone.utc).isoformat(),
         }
-        self.query("#history").first().write(str(msg))
         self.producer.produce("chat", key=self._user, value=json.dumps(msg))
         self.producer.flush()
 
@@ -124,18 +142,3 @@ class ChatWithKafkaApp(App):
                 except:
                     self.query("#history").first().write(f"Error decoding message: {msg.value().decode('utf-8')}")
                 self.query("#history").first().refresh()
-
-    def on_key(self, event: Key):
-        """This is the event handler for key events. We use this to handle the enter key and the escape key."""
-        if event.key == "escape":
-            self.exit()
-        elif event.key == "enter":
-            input = self.query("#message").first()
-            message = input.value
-            self.log("Sending message: " + message)
-            self._send_message(message)
-            input.value = ""
-            input.refresh()
-
-    def _on_exit_app(self) -> None:
-        self._send_message("Has left the chat.")
